@@ -1,11 +1,26 @@
 import URI from 'urijs';
 
-export const create = page => new Reveal(page);
+export const options = {
+  fragments: {
+    default : false,
+    flag    : true,
+    help    : 'Enable or disable fragments',
+  },
+  progress: {
+    default : false,
+    flag    : true,
+    help    : 'Enable or disable progress bar',
+  },
+};
+
+export const create = (page, opts) => new Reveal(page, opts);
 
 class Reveal {
 
-  constructor(page) {
+  constructor(page, opts) {
     this.page = page;
+    this.fragments = opts.fragments;
+    this.progress = opts.progress;
   }
 
   getName() {
@@ -30,12 +45,13 @@ class Reveal {
   }
 
   configure() {
-    return this.page.evaluate(fragments => {
+    return this.page.evaluate(config => {
         Reveal.configure({
-          controls  : false,
-          progress  : false,
-          fragments : fragments,
-          transition: 'none'
+          controls   : false,
+          progress   : config.progress,
+          fragments  : config.fragments,
+          transition : 'none',
+          autoAnimate: false,
         });
 
         // This is a workaround to disable the open button of the RevealMenu plugin.
@@ -45,10 +61,10 @@ class Reveal {
           menuOpenButtons[i].style.display = 'none';
         }
       },
-      // It seems passing 'fragments=true' in the URL query string does not take precedence
-      // over globally configured 'fragments' and prevents from being able to toggle fragments
-      // with ...?fragments=<true|false> so we work around that by parsing the page query string
-      (URI(this.page.url()).query(true)['fragments'] || 'false').toLowerCase() === 'true');
+      {
+        fragments: this.fragments,
+        progress: this.progress
+      });
   }
 
   slideCount() {
