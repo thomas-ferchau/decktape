@@ -1,36 +1,36 @@
 # syntax=docker/dockerfile:1.3.0-labs
 
-FROM node:20.11-alpine3.19 as builder
+FROM node:20.15-alpine3.19 as builder
 
 ENV NODE_ENV production
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
 
 WORKDIR /decktape
 
-COPY package.json npm-shrinkwrap.json ./
+COPY package.json package-lock.json ./
 COPY libs libs/
 COPY plugins plugins/
 COPY decktape.js ./
 
-RUN npm install
+RUN npm ci --omit=dev
 
 FROM alpine:3.19.1
 
 LABEL org.opencontainers.image.source="https://github.com/astefanutti/decktape"
 
-ARG CHROMIUM_VERSION=123.0.6312.122-r0
+ARG CHROMIUM_VERSION=128.0.6613.119-r0
 ENV TERM xterm-color
 
 RUN <<EOF cat > /etc/apk/repositories
-http://dl-cdn.alpinelinux.org/alpine/edge/main
-http://dl-cdn.alpinelinux.org/alpine/edge/community
-http://dl-cdn.alpinelinux.org/alpine/edge/testing
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
 EOF
 
 # Chromium, CA certificates, fonts
 # https://git.alpinelinux.org/cgit/aports/log/community/chromium
 RUN apk update && apk upgrade && \
     apk add --no-cache \
+    bash \
     ca-certificates \
     libstdc++ \
     chromium=${CHROMIUM_VERSION} \
@@ -38,10 +38,7 @@ RUN apk update && apk upgrade && \
     freetype \
     harfbuzz \
     nss \
-    ttf-freefont \
-    wqy-zenhei && \
-    # /etc/fonts/conf.d/44-wqy-zenhei.conf overrides 'monospace' matching FreeMono.ttf in /etc/fonts/conf.d/69-unifont.conf
-    mv /etc/fonts/conf.d/44-wqy-zenhei.conf /etc/fonts/conf.d/74-wqy-zenhei.conf && \
+    ttf-freefont && \
     rm -rf /var/cache/apk/*
 
 # Node.js
@@ -65,6 +62,6 @@ USER node
 # https://github.com/jessfraz/dockerfiles/issues/65
 # https://github.com/jessfraz/dockerfiles/issues/156
 # https://github.com/jessfraz/dockerfiles/issues/341
-ENTRYPOINT ["node", "/decktape/decktape.js", "--chrome-path", "chromium-browser", "--chrome-arg=--no-sandbox"]
+ENTRYPOINT ["node", "/decktape/decktape.js", "--chrome-path", "/usr/bin/chromium-browser", "--chrome-arg=--no-sandbox", "--chrome-arg=--disable-gpu"]
 
 CMD ["-h"]
