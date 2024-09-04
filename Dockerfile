@@ -30,6 +30,7 @@ EOF
 # https://git.alpinelinux.org/cgit/aports/log/community/chromium
 RUN apk update && apk upgrade && \
     apk add --no-cache \
+    bash \
     ca-certificates \
     libstdc++ \
     chromium=${CHROMIUM_VERSION} \
