@@ -1,30 +1,29 @@
 # syntax=docker/dockerfile:1.3.0-labs
 
-FROM node:20.11-alpine3.19 as builder
+FROM node:20.15-alpine3.19 as builder
 
 ENV NODE_ENV production
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
 
 WORKDIR /decktape
 
-COPY package.json npm-shrinkwrap.json ./
+COPY package.json package-lock.json ./
 COPY libs libs/
 COPY plugins plugins/
 COPY decktape.js ./
 
-RUN npm install
+RUN npm ci --omit=dev
 
 FROM alpine:3.19.1
 
 LABEL org.opencontainers.image.source="https://github.com/astefanutti/decktape"
 
-ARG CHROMIUM_VERSION=123.0.6312.122-r0
+ARG CHROMIUM_VERSION=127.0.6533.99-r0
 ENV TERM xterm-color
 
 RUN <<EOF cat > /etc/apk/repositories
-http://dl-cdn.alpinelinux.org/alpine/edge/main
-http://dl-cdn.alpinelinux.org/alpine/edge/community
-http://dl-cdn.alpinelinux.org/alpine/edge/testing
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
 EOF
 
 # Chromium, CA certificates, fonts
@@ -65,6 +64,6 @@ USER node
 # https://github.com/jessfraz/dockerfiles/issues/65
 # https://github.com/jessfraz/dockerfiles/issues/156
 # https://github.com/jessfraz/dockerfiles/issues/341
-ENTRYPOINT ["node", "/decktape/decktape.js", "--chrome-path", "chromium-browser", "--chrome-arg=--no-sandbox"]
+ENTRYPOINT ["node", "/decktape/decktape.js", "--chrome-path", "/usr/bin/chromium-browser", "--chrome-arg=--no-sandbox", "--chrome-arg=--disable-gpu"]
 
 CMD ["-h"]
